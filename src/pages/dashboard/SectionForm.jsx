@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMenu } from '../../contexts/MenuContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button, Input, Card } from '../../components/ui';
 import DashboardLayout from '../../layouts/DashboardLayout';
 
@@ -8,6 +9,8 @@ function SectionForm() {
   const { menuId, sectionId } = useParams();
   const navigate = useNavigate();
   const { menus, createSection, updateSection } = useMenu();
+  const { theme } = useTheme();
+  const isDark = theme.mode === 'dark';
   
   const menu = menus.find(m => m.id === menuId);
   const isEditing = !!sectionId;
@@ -50,12 +53,12 @@ function SectionForm() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">
+          <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {isEditing ? 'Editar Sección' : 'Nueva Sección'}
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Sección de: {menu.icon} {menu.name}
           </p>
         </div>

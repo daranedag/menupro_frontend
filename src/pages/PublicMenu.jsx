@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PublicLayout from '../layouts/PublicLayout';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import MenuSelector from '../components/menu/MenuSelector';
 import MenuSection from '../components/menu/MenuSection';
@@ -8,14 +8,22 @@ import { mockMenus, mockRestaurant } from '../data/mockMenuData';
 
 function PublicMenu() {
   const { restaurantId } = useParams();
+  const [searchParams] = useSearchParams();
   const { theme } = useTheme();
+  
+  // Detectar si estamos en modo preview y qué modo usar
+  const isPreview = searchParams.get('preview') === 'true';
+  const previewMode = searchParams.get('mode') || 'light';
+  
+  // Usar modo preview si está activo, sino usar el tema del contexto
+  const currentMode = isPreview ? previewMode : theme.mode;
   
   // Buscar menú por restaurantId, o usar el primero como fallback
   const restaurantMenus = mockMenus.filter(m => m.restaurantId === restaurantId);
   const [activeMenu, setActiveMenu] = useState(restaurantMenus[0] || mockMenus[0]);
 
-  const bgColor = theme.mode === 'dark' ? '#1f2937' : '#f9fafb';
-  const textColor = theme.mode === 'dark' ? '#ffffff' : '#1f2937';
+  const bgColor = currentMode === 'dark' ? '#1f2937' : '#f9fafb';
+  const textColor = currentMode === 'dark' ? '#ffffff' : '#1f2937';
 
   return (
     <PublicLayout>
@@ -96,45 +104,56 @@ function PublicMenu() {
           )}
 
           {/* Footer Call to Action */}
-          <div 
-            className="mt-12 rounded-lg p-6 sm:p-8 text-white text-center"
-            style={{ 
-              background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})` 
-            }}
-          >
-            <h3 className="text-xl sm:text-2xl font-bold mb-2">
-              ¿Te gustó nuestro menú?
-            </h3>
-            <p className="mb-4 text-sm sm:text-base opacity-90">
-              Reserva tu mesa o haz tu pedido ahora
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button 
-                className="px-6 py-3 rounded-lg font-semibold transition-colors"
-                style={{ 
-                  backgroundColor: 'white',
-                  color: theme.colors.primary 
-                }}
-              >
-                📞 Llamar Ahora
-              </button>
-              <button className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white transition-colors"
-                style={{ 
-                  borderColor: 'white',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'white';
-                  e.target.style.color = theme.colors.primary;
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.color = 'white';
-                }}
-              >
-                🚗 Pedir Delivery
-              </button>
+          {activeMenu.showCallToAction && (activeMenu.phoneNumber || activeMenu.deliveryUrl) && (
+            <div 
+              className="mt-12 rounded-lg p-6 sm:p-8 text-white text-center"
+              style={{ 
+                background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})` 
+              }}
+            >
+              <h3 className="text-xl sm:text-2xl font-bold mb-2">
+                {activeMenu.ctaTitle || '¿Te gustó nuestro menú?'}
+              </h3>
+              <p className="mb-4 text-sm sm:text-base opacity-90">
+                {activeMenu.ctaDescription || 'Reserva tu mesa o haz tu pedido ahora'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {activeMenu.phoneNumber && (
+                  <a
+                    href={`tel:${activeMenu.phoneNumber}`}
+                    className="px-6 py-3 rounded-lg font-semibold transition-colors"
+                    style={{ 
+                      backgroundColor: 'white',
+                      color: theme.colors.primary 
+                    }}
+                  >
+                    📞 Llamar Ahora
+                  </a>
+                )}
+                {activeMenu.deliveryUrl && (
+                  <a
+                    href={activeMenu.deliveryUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white transition-colors"
+                    style={{ 
+                      borderColor: 'white',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = 'white';
+                      e.target.style.color = theme.colors.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                      e.target.style.color = 'white';
+                    }}
+                  >
+                    🚗 Pedir Delivery
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </PublicLayout>

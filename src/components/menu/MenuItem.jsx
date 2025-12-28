@@ -53,14 +53,20 @@ function MenuItem({ item }) {
             
             {/* Precio */}
             <div className="text-right flex-shrink-0">
-              {hasDiscount && (
-                <p className="text-sm text-gray-400 line-through">
+              {hasDiscount ? (
+                <div>
+                  <p className="text-sm text-gray-500 line-through mb-0.5">
+                    ${item.price.toFixed(2)}
+                  </p>
+                  <p className="font-bold text-red-600 text-xl">
+                    ${finalPrice.toFixed(2)}
+                  </p>
+                </div>
+              ) : (
+                <p className="font-bold text-green-600 text-lg">
                   ${item.price.toFixed(2)}
                 </p>
               )}
-              <p className={`font-bold ${hasDiscount ? 'text-red-600 text-xl' : 'text-green-600 text-lg'}`}>
-                ${finalPrice.toFixed(2)}
-              </p>
             </div>
           </div>
           

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useMenu } from '../../contexts/MenuContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button, Badge, Card, Modal } from '../../components/ui';
+import { Plus, GripVertical, Edit, Pause, Play, Trash2, Power, PowerOff, Eye } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { MenuPreview, PDFGenerator, QRGenerator, MobilePreview } from '../../components/dashboard';
 import {
@@ -23,6 +25,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 // Componente para Sección Sortable
 function SortableSection({ section, menuId, onDeleteSection, onToggleSection, onDeleteDish }) {
+  const { theme } = useTheme();
+  const isDark = theme.mode === 'dark';
   const {
     attributes,
     listeners,
@@ -39,21 +43,23 @@ function SortableSection({ section, menuId, onDeleteSection, onToggleSection, on
   return (
     <Card ref={setNodeRef} style={style} padding="none">
       {/* Section Header */}
-      <div className="p-6 border-b bg-gray-50">
+      <div className={`p-6 border-b ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <button
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 text-xl"
+              className={`cursor-grab active:cursor-grabbing ${
+                isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
+              }`}
             >
-              ⋮⋮
+              <GripVertical size={20} />
             </button>
             {section.icon && <span className="text-2xl">{section.icon}</span>}
             <div>
-              <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+              <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{section.name}</h3>
               {section.description && (
-                <p className="text-sm text-gray-600">{section.description}</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{section.description}</p>
               )}
             </div>
             <Badge variant={section.isActive ? 'success' : 'default'} size="sm">
@@ -63,22 +69,25 @@ function SortableSection({ section, menuId, onDeleteSection, onToggleSection, on
           <div className="flex gap-2">
             <Link to={`/dashboard/menus/${menuId}/sections/${section.id}/dishes/new`}>
               <Button variant="primary" size="sm">
-                ➕ Plato
+                <Plus size={16} className="inline mr-1" />
+                Plato
               </Button>
             </Link>
             <Button
               variant={section.isActive ? 'warning' : 'success'}
               size="sm"
               onClick={() => onToggleSection(section.id)}
+              title={section.isActive ? 'Pausar' : 'Activar'}
             >
-              {section.isActive ? '⏸️' : '▶️'}
+              {section.isActive ? <Pause size={16} /> : <Play size={16} />}
             </Button>
             <Button
               variant="danger"
               size="sm"
               onClick={() => onDeleteSection(section.id, section.name)}
+              title="Eliminar"
             >
-              🗑️
+              <Trash2 size={16} />
             </Button>
           </div>
         </div>
@@ -94,7 +103,7 @@ function SortableSection({ section, menuId, onDeleteSection, onToggleSection, on
             onDeleteDish={onDeleteDish}
           />
         ) : (
-          <div className="text-center py-8 text-gray-500">
+          <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             <p className="mb-3">No hay platos en esta sección</p>
             <Link to={`/dashboard/menus/${menuId}/sections/${section.id}/dishes/new`}>
               <Button variant="outline" size="sm">Agregar Primer Plato</Button>
@@ -149,6 +158,9 @@ function DishList({ dishes, menuId, sectionId, onDeleteDish }) {
 
 // Componente para Plato Sortable
 function SortableDish({ dish, menuId, sectionId, onDelete }) {
+  const { toggleDishStatus } = useMenu();
+  const { theme } = useTheme();
+  const isDark = theme.mode === 'dark';
   const {
     attributes,
     listeners,
@@ -162,18 +174,28 @@ function SortableDish({ dish, menuId, sectionId, onDelete }) {
     transition,
   };
 
+  // Calcular precio con descuento
+  const hasDiscount = dish.discount && dish.discount > 0;
+  const finalPrice = hasDiscount 
+    ? dish.price - (dish.price * dish.discount / 100)
+    : dish.price;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 p-4 bg-white border rounded-lg hover:shadow-md transition-shadow"
+      className={`flex items-center gap-4 p-4 border rounded-lg hover:shadow-md transition-shadow ${
+        isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+      }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 text-xl"
+        className={`cursor-grab active:cursor-grabbing ${
+          isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
+        }`}
       >
-        ⋮⋮
+        <GripVertical size={20} />
       </button>
       {dish.image && (
         <img
@@ -184,7 +206,7 @@ function SortableDish({ dish, menuId, sectionId, onDelete }) {
       )}
       <div className="flex-grow">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="font-semibold text-gray-800">{dish.name}</h4>
+          <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dish.name}</h4>
           {dish.discount > 0 && (
             <Badge variant="discount" size="sm">-{dish.discount}%</Badge>
           )}
@@ -192,21 +214,43 @@ function SortableDish({ dish, menuId, sectionId, onDelete }) {
             {dish.isActive ? 'Activo' : 'Inactivo'}
           </Badge>
         </div>
-        <p className="text-sm text-gray-600 line-clamp-1">{dish.description}</p>
+        <p className={`text-sm line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{dish.description}</p>
       </div>
       <div className="text-right">
-        <p className="text-lg font-bold text-green-600">${dish.price.toFixed(2)}</p>
+        {hasDiscount ? (
+          <div>
+            <p className={`text-sm line-through mb-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              ${dish.price.toFixed(2)}
+            </p>
+            <p className="text-lg font-bold text-red-600">
+              ${finalPrice.toFixed(2)}
+            </p>
+          </div>
+        ) : (
+          <p className="text-lg font-bold text-emerald-600">${dish.price.toFixed(2)}</p>
+        )}
       </div>
       <div className="flex gap-2">
         <Link to={`/dashboard/menus/${menuId}/sections/${sectionId}/dishes/${dish.id}`}>
-          <Button variant="ghost" size="sm">✏️</Button>
+          <Button variant="ghost" size="sm" title="Editar">
+            <Edit size={16} />
+          </Button>
         </Link>
+        <Button
+          variant={dish.isActive ? 'warning' : 'success'}
+          size="sm"
+          onClick={() => toggleDishStatus(menuId, sectionId, dish.id)}
+          title={dish.isActive ? 'Desactivar plato' : 'Activar plato'}
+        >
+          {dish.isActive ? <PowerOff size={16} /> : <Power size={16} />}
+        </Button>
         <Button
           variant="danger"
           size="sm"
           onClick={() => onDelete(sectionId, dish.id, dish.name)}
+          title="Eliminar"
         >
-          🗑️
+          <Trash2 size={16} />
         </Button>
       </div>
     </div>
@@ -217,6 +261,8 @@ function MenuEditor() {
   const { menuId } = useParams();
   const navigate = useNavigate();
   const { menus, deleteSection, deleteDish, toggleSectionStatus, reorderSections } = useMenu();
+  const { theme } = useTheme();
+  const isDark = theme.mode === 'dark';
   const [showPreview, setShowPreview] = useState(false);
 
   const menu = menus.find(m => m.id === menuId);
@@ -234,7 +280,7 @@ function MenuEditor() {
         <Card>
           <div className="text-center py-12">
             <span className="text-6xl mb-4 block">❌</span>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
               Carta no encontrada
             </h3>
             <Link to="/dashboard/menus">
@@ -281,9 +327,9 @@ function MenuEditor() {
             <div className="flex items-center gap-3">
               <span className="text-4xl">{menu.icon}</span>
               <div>
-                <h2 className="text-3xl font-bold text-gray-800">{menu.name}</h2>
+                <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{menu.name}</h2>
                 {menu.description && (
-                  <p className="text-gray-600">{menu.description}</p>
+                  <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{menu.description}</p>
                 )}
               </div>
             </div>
@@ -293,16 +339,23 @@ function MenuEditor() {
         {/* Actions */}
         <div className="flex flex-wrap gap-3 mb-6">
           <Link to={`/dashboard/menus/${menuId}/sections/new`}>
-            <Button variant="primary">➕ Nueva Sección</Button>
+            <Button variant="primary">
+              <Plus size={18} className="inline mr-2" />
+              Nueva Sección
+            </Button>
           </Link>
           <Button variant="outline" onClick={() => setShowPreview(true)}>
-            👁️ Vista Previa
+            <Eye size={18} className="inline mr-2" />
+            Vista Previa
           </Button>
           <MobilePreview menuId={menuId} />
           <PDFGenerator menu={menu} />
           <QRGenerator menuId={menuId} menuName={menu.name} />
           <Link to={`/dashboard/menus/${menuId}/edit`}>
-            <Button variant="outline">✏️ Editar Carta</Button>
+            <Button variant="outline">
+              <Edit size={18} className="inline mr-2" />
+              Editar Carta
+            </Button>
           </Link>
         </div>
 
@@ -327,10 +380,10 @@ function MenuEditor() {
             <Card>
               <div className="text-center py-12">
                 <span className="text-6xl mb-4 block">📁</span>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
                   No hay secciones
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Crea tu primera sección para organizar tu menú
                 </p>
                 <Link to={`/dashboard/menus/${menuId}/sections/new`}>

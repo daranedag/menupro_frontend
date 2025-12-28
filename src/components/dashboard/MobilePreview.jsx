@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Button, Modal } from '../ui';
+import { Smartphone } from 'lucide-react';
 
 export default function MobilePreview({ menuId }) {
   const [showPreview, setShowPreview] = useState(false);
   
-  const previewUrl = `${window.location.origin}/menu/${menuId}`;
+  // Vista previa siempre en modo claro
+  const previewUrl = `${window.location.origin}/menu/${menuId}?preview=true&mode=light`;
 
   return (
     <>
       <Button variant="outline" onClick={() => setShowPreview(true)}>
-        📱 Preview Móvil
+        <Smartphone size={18} className="inline mr-2" />
+        Preview Móvil
       </Button>
 
       <Modal

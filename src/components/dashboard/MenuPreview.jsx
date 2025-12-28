@@ -1,4 +1,5 @@
 import MenuSection from '../menu/MenuSection';
+import { UtensilsCrossed } from 'lucide-react';
 
 function MenuPreview({ menu }) {
   return (
@@ -25,7 +26,11 @@ function MenuPreview({ menu }) {
         </div>
       ) : (
         <div className="text-center py-12 bg-white rounded-lg">
-          <span className="text-6xl mb-4 block">🍽️</span>
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-gray-100 rounded-full">
+              <UtensilsCrossed className="text-gray-400" size={48} />
+            </div>
+          </div>
           <p className="text-gray-500">
             No hay secciones para mostrar
           </p>

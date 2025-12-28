@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Button, Modal } from '../ui';
+import { QrCode, Copy, Download } from 'lucide-react';
 
 export default function QRGenerator({ menuId, menuName }) {
   const [showQR, setShowQR] = useState(false);
@@ -27,7 +28,8 @@ export default function QRGenerator({ menuId, menuName }) {
   return (
     <>
       <Button variant="outline" onClick={() => setShowQR(true)}>
-        📱 Generar QR
+        <QrCode size={18} className="inline mr-2" />
+        Generar QR
       </Button>
 
       <Modal
@@ -62,14 +64,16 @@ export default function QRGenerator({ menuId, menuName }) {
                 className="flex-1 px-3 py-2 border rounded-lg text-sm bg-gray-50"
               />
               <Button variant="outline" size="sm" onClick={copyLink}>
-                📋 Copiar
+                <Copy size={16} className="inline mr-1" />
+                Copiar
               </Button>
             </div>
           </div>
 
           <div className="flex gap-3 justify-center">
             <Button variant="primary" onClick={downloadQR}>
-              ⬇️ Descargar QR
+              <Download size={18} className="inline mr-2" />
+              Descargar QR
             </Button>
             <Button variant="outline" onClick={() => setShowQR(false)}>
               Cerrar

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMenu } from '../../contexts/MenuContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button, Input, Card, Badge } from '../../components/ui';
 import DashboardLayout from '../../layouts/DashboardLayout';
 
@@ -8,6 +9,8 @@ function DishForm() {
   const { menuId, sectionId, dishId } = useParams();
   const navigate = useNavigate();
   const { menus, createDish, updateDish } = useMenu();
+  const { theme } = useTheme();
+  const isDark = theme.mode === 'dark';
   
   const menu = menus.find(m => m.id === menuId);
   const section = menu?.sections?.find(s => s.id === sectionId);
@@ -87,12 +90,12 @@ function DishForm() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">
+          <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {isEditing ? 'Editar Plato' : 'Nuevo Plato'}
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {menu.icon} {menu.name} → {section.icon} {section.name}
           </p>
         </div>
@@ -135,7 +138,9 @@ function DishForm() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                isDark ? 'text-gray-200' : 'text-gray-700'
+              }`}>
                 Descripción Larga (Opcional)
               </label>
               <textarea
@@ -144,9 +149,13 @@ function DishForm() {
                 onChange={handleChange}
                 rows="3"
                 placeholder="Descripción detallada del plato, ingredientes, preparación"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
-              <p className="text-sm text-gray-500 mt-1">Se muestra solo en desktop</p>
+              <p className={`text-sm mt-1 ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>Se muestra solo en desktop</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -194,8 +203,12 @@ function DishForm() {
             />
 
             {formData.image && (
-              <div className="border rounded-lg p-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Vista Previa:</p>
+              <div className={`border rounded-lg p-4 ${
+                isDark ? 'border-gray-600' : 'border-gray-300'
+              }`}>
+                <p className={`text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-200' : 'text-gray-700'
+                }`}>Vista Previa:</p>
                 <img 
                   src={formData.image} 
                   alt="Preview" 
@@ -206,7 +219,9 @@ function DishForm() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className={`block text-sm font-medium mb-3 ${
+                isDark ? 'text-gray-200' : 'text-gray-700'
+              }`}>
                 Características
               </label>
               <div className="flex flex-wrap gap-4">
@@ -218,7 +233,9 @@ function DishForm() {
                     onChange={handleChange}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
-                  <span className="text-sm text-gray-700">🥬 Vegetariano</span>
+                  <span className={`text-sm ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>🥬 Vegetariano</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -228,13 +245,17 @@ function DishForm() {
                     onChange={handleChange}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
-                  <span className="text-sm text-gray-700">🌶️ Picante</span>
+                  <span className={`text-sm ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>🌶️ Picante</span>
                 </label>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                isDark ? 'text-gray-200' : 'text-gray-700'
+              }`}>
                 Tags / Etiquetas
               </label>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -257,12 +278,16 @@ function DishForm() {
                   value={newTag.label}
                   onChange={(e) => setNewTag({ ...newTag, label: e.target.value })}
                   placeholder="Nombre del tag"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                 />
                 <select
                   value={newTag.variant}
                   onChange={(e) => setNewTag({ ...newTag, variant: e.target.value })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
                 >
                   <option value="default">Default</option>
                   <option value="primary">Primary</option>
@@ -277,7 +302,9 @@ function DishForm() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t">
+            <div className={`flex gap-3 pt-4 border-t ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <Button type="submit" variant="primary" size="lg">
                 {isEditing ? 'Guardar Cambios' : 'Crear Plato'}
               </Button>

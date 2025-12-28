@@ -69,28 +69,26 @@ export const fontPresets = {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState({
-    mode: 'light', // 'light' o 'dark'
-    colors: colorPresets.default,
-    colorPreset: 'default',
-    font: fontPresets.default,
-    fontPreset: 'default',
-  });
-
-  // Cargar tema desde localStorage
-  useEffect(() => {
+  // Inicializar tema directamente desde localStorage
+  const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('restaurantTheme');
     if (storedTheme) {
       try {
-        const parsed = JSON.parse(storedTheme);
-        setTheme(parsed);
+        return JSON.parse(storedTheme);
       } catch (error) {
         console.error('Error loading theme:', error);
       }
     }
-  }, []);
+    return {
+      mode: 'light',
+      colors: colorPresets.default,
+      colorPreset: 'default',
+      font: fontPresets.default,
+      fontPreset: 'default',
+    };
+  });
 
-  // Guardar tema en localStorage
+  // Guardar tema en localStorage cuando cambie
   useEffect(() => {
     localStorage.setItem('restaurantTheme', JSON.stringify(theme));
     

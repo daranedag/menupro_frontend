@@ -4,45 +4,48 @@ import { Card, Button, Badge } from '../../components/ui';
 
 function Settings() {
   const { theme, updateColors, updateFont, toggleMode, resetTheme } = useTheme();
+  const isDark = theme.mode === 'dark';
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">Configuración</h2>
-          <p className="text-gray-600 mt-1">Personaliza la apariencia de tu menú</p>
+          <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Configuración</h2>
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Personaliza la apariencia de tu menú</p>
         </div>
 
         {/* Modo Claro/Oscuro */}
         <Card title="Tema" subtitle="Modo claro u oscuro" className="mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
             <button
               onClick={() => toggleMode()}
-              className={`flex items-center gap-3 px-6 py-4 rounded-lg border-2 transition-all ${
+              className={`flex-1 flex items-center gap-3 px-6 py-4 rounded-lg border-2 transition-all ${
                 theme.mode === 'light'
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  : isDark 
+                    ? 'border-gray-600 hover:border-gray-500 bg-gray-800' 
+                    : 'border-gray-300 hover:border-gray-400'
               }`}
             >
               <span className="text-3xl">☀️</span>
               <div className="text-left">
-                <div className="font-semibold">Modo Claro</div>
-                <div className="text-sm text-gray-600">Fondo blanco</div>
+                <div className={`font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Modo Claro</div>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Fondo blanco</div>
               </div>
             </button>
 
             <button
               onClick={() => toggleMode()}
-              className={`flex items-center gap-3 px-6 py-4 rounded-lg border-2 transition-all ${
+              className={`flex-1 flex items-center gap-3 px-6 py-4 rounded-lg border-2 transition-all ${
                 theme.mode === 'dark'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-blue-500 bg-blue-900'
                   : 'border-gray-300 hover:border-gray-400'
               }`}
             >
               <span className="text-3xl">🌙</span>
               <div className="text-left">
-                <div className="font-semibold">Modo Oscuro</div>
-                <div className="text-sm text-gray-600">Fondo oscuro</div>
+                <div className={`font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Modo Oscuro</div>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Fondo oscuro</div>
               </div>
             </button>
           </div>
@@ -50,7 +53,7 @@ function Settings() {
 
         {/* Paleta de Colores */}
         <Card title="Colores" subtitle="Elige la paleta de colores para tu menú" className="mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {Object.entries(colorPresets).map(([key, colors]) => (
               <button
                 key={key}
@@ -58,7 +61,9 @@ function Settings() {
                 className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
                   theme.colorPreset === key
                     ? 'border-blue-500 shadow-lg'
-                    : 'border-gray-200'
+                    : isDark 
+                      ? 'border-gray-600 hover:border-gray-500' 
+                      : 'border-gray-200'
                 }`}
               >
                 <div className="flex gap-2 mb-3">
@@ -75,7 +80,7 @@ function Settings() {
                     style={{ backgroundColor: colors.accent }}
                   />
                 </div>
-                <div className="font-semibold text-sm capitalize">{key}</div>
+                <div className={`font-semibold text-sm capitalize ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{key}</div>
                 {theme.colorPreset === key && (
                   <Badge variant="primary" size="sm" className="mt-2">
                     Activo
@@ -85,9 +90,9 @@ function Settings() {
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-semibold mb-3">Vista Previa</h4>
-            <div className="flex gap-3">
+          <div className={`mt-6 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+            <h4 className={`font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Vista Previa</h4>
+            <div className="flex flex-wrap gap-3">
               <button
                 className="px-4 py-2 rounded-lg text-white font-medium"
                 style={{ backgroundColor: theme.colors.primary }}
@@ -119,21 +124,25 @@ function Settings() {
                 onClick={() => updateFont(key)}
                 className={`w-full p-4 rounded-lg border-2 transition-all text-left hover:shadow-md ${
                   theme.fontPreset === key
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200'
+                    ? isDark 
+                      ? 'border-blue-500 bg-blue-900' 
+                      : 'border-blue-500 bg-blue-50'
+                    : isDark 
+                      ? 'border-gray-600 hover:border-gray-500' 
+                      : 'border-gray-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-semibold mb-1">{font.name}</div>
+                    <div className={`font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{font.name}</div>
                     <div
-                      className="text-lg"
+                      className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-800'}`}
                       style={{ fontFamily: font.fontFamily }}
                     >
                       The quick brown fox jumps over the lazy dog
                     </div>
                     <div
-                      className="text-sm text-gray-600"
+                      className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                       style={{ fontFamily: font.fontFamily }}
                     >
                       1234567890 - ¡Hola! ¿Cómo estás?
