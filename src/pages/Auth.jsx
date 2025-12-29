@@ -13,7 +13,7 @@ function Auth() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,14 +27,16 @@ function Auth() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!isLogin) {
+      setError('El registro está deshabilitado por ahora. Solicita acceso al administrador.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        await login(formData.email, formData.password);
-      } else {
-        await register(formData.restaurantName, formData.email, formData.password);
-      }
+      await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Error al procesar la solicitud');
@@ -64,16 +66,9 @@ function Auth() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
-            <Input
-              label="Nombre del Restaurante"
-              name="restaurantName"
-              type="text"
-              placeholder="Mi Restaurante"
-              value={formData.restaurantName}
-              onChange={handleChange}
-              required={!isLogin}
-              icon="🍽️"
-            />
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              El registro desde la app aún no está disponible. Por favor inicia sesión con tu cuenta existente.
+            </div>
           )}
           
           <Input
@@ -106,7 +101,7 @@ function Auth() {
             fullWidth
             disabled={isLoading}
           >
-            {isLoading ? 'Procesando...' : (isLogin ? 'Entrar' : 'Crear Cuenta')}
+            {isLoading ? 'Procesando...' : (isLogin ? 'Entrar' : 'Registro no disponible')}
           </Button>
         </form>
         

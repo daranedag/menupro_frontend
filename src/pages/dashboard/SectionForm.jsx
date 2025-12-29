@@ -31,16 +31,24 @@ function SectionForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    if (isEditing) {
-      updateSection(menuId, sectionId, formData);
-    } else {
-      createSection(menuId, formData);
+    try {
+      if (isEditing) {
+        await updateSection(menuId, sectionId, formData);
+      } else {
+        await createSection(menuId, formData);
+      }
+      navigate(`/dashboard/menus/${menuId}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    navigate(`/dashboard/menus/${menuId}`);
   };
 
   if (!menu) {
@@ -119,8 +127,8 @@ function SectionForm() {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" variant="primary" size="lg">
-                {isEditing ? 'Guardar Cambios' : 'Crear Sección'}
+              <Button type="submit" variant="primary" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Sección')}
               </Button>
               <Button
                 type="button"

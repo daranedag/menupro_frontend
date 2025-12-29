@@ -3,7 +3,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import { useMenu } from '../contexts/MenuContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Card } from '../components/ui';
+import { Card, Spinner } from '../components/ui';
 import { BookOpen, FolderOpen, UtensilsCrossed, Plus, List, Eye } from 'lucide-react';
 import MenuManagement from './dashboard/MenuManagement';
 import MenuForm from './dashboard/MenuForm';
@@ -13,7 +13,7 @@ import DishForm from './dashboard/DishForm';
 import Settings from './dashboard/Settings';
 
 function DashboardHome() {
-  const { menus } = useMenu();
+  const { menus, isLoading, error } = useMenu();
   const { user } = useAuth();
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
@@ -36,8 +36,32 @@ function DashboardHome() {
           }`}>
             Bienvenido, {user?.name || 'Usuario'}
           </h2>
-          <p className={isDark ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>{user?.restaurantName}</p>
+          <p className={isDark ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>{user?.activeRestaurantName || user?.restaurantName}</p>
         </div>
+
+        {isLoading && (
+          <Card>
+            <div className="py-8 text-center text-sm">
+              <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>Cargando cartas...</p>
+            </div>
+          </Card>
+        )}
+
+        {error && !isLoading && (
+          <Card>
+            <div className="py-4 px-4 text-sm text-red-600">
+              {error}
+            </div>
+          </Card>
+        )}
+
+        {isLoading && (
+          <Card>
+            <div className="py-8 flex items-center justify-center">
+              <Spinner label="Cargando cartas..." />
+            </div>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card hoverable>
@@ -110,10 +134,11 @@ function DashboardHome() {
                 <span>Gestionar Cartas</span>
               </a>
               <a
-                href={`/menu/${user?.restaurantId}`}
+                href={user?.activeRestaurantSlug && menus[0]?.slug ? `/menu/${user.activeRestaurantSlug}/${menus[0].slug}` : '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors font-medium shadow-sm hover:shadow-md"
+                aria-disabled={!user?.activeRestaurantSlug || !menus[0]?.slug}
               >
                 <Eye size={20} />
                 <span>Ver Menú Público</span>

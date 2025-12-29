@@ -4,12 +4,17 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import MenuSelector from '../components/menu/MenuSelector';
 import MenuSection from '../components/menu/MenuSection';
-import { mockMenus, mockRestaurant } from '../data/mockMenuData';
+import { fetchPublicMenu } from '../api/menus';
 
 function PublicMenu() {
-  const { restaurantId } = useParams();
+  const { restaurantSlug, menuSlug } = useParams();
   const [searchParams] = useSearchParams();
   const { theme } = useTheme();
+  const [menus, setMenus] = useState([]);
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [restaurantInfo, setRestaurantInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Detectar si estamos en modo preview y qué modo usar
   const isPreview = searchParams.get('preview') === 'true';
@@ -18,12 +23,57 @@ function PublicMenu() {
   // Usar modo preview si está activo, sino usar el tema del contexto
   const currentMode = isPreview ? previewMode : theme.mode;
   
-  // Buscar menú por restaurantId, o usar el primero como fallback
-  const restaurantMenus = mockMenus.filter(m => m.restaurantId === restaurantId);
-  const [activeMenu, setActiveMenu] = useState(restaurantMenus[0] || mockMenus[0]);
+  useEffect(() => {
+    const loadMenu = async () => {
+      if (!restaurantSlug || !menuSlug) {
+        setError('Faltan parámetros de menú');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const { data } = await fetchPublicMenu(restaurantSlug, menuSlug);
+        const fetchedMenus = Array.isArray(data?.menus) ? data.menus : data?.menu ? [data.menu] : [data];
+        setMenus(fetchedMenus);
+        setActiveMenu(fetchedMenus[0]);
+        setRestaurantInfo(data?.restaurant || data?.restaurants?.[0] || null);
+      } catch (err) {
+        setError(err?.message || 'No se pudo cargar el menú');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMenu();
+  }, [restaurantSlug, menuSlug]);
 
   const bgColor = currentMode === 'dark' ? '#1f2937' : '#f9fafb';
   const textColor = currentMode === 'dark' ? '#ffffff' : '#1f2937';
+
+  if (isLoading) {
+    return (
+      <PublicLayout>
+        <div className="py-16 flex flex-col items-center gap-4 text-center">
+          <div className="h-10 w-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" aria-label="Cargando" />
+          <p className="text-sm text-gray-600">Cargando menú...</p>
+        </div>
+      </PublicLayout>
+    );
+  }
+
+  if (error || !activeMenu) {
+    return (
+      <PublicLayout>
+        <div className="py-16 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-red-600">{error || 'No se encontró el menú'}</p>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>
@@ -31,29 +81,29 @@ function PublicMenu() {
       <div 
         className="relative h-48 sm:h-64 bg-cover bg-center"
         style={{ 
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${mockRestaurant.coverImage})`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${restaurantInfo?.coverImage || restaurantInfo?.cover_image || ''})`,
           fontFamily: theme.font.fontFamily 
         }}
       >
         <div className="relative container mx-auto px-4 h-full flex flex-col justify-center text-white">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-4xl sm:text-5xl">{mockRestaurant.logo}</span>
+            <span className="text-4xl sm:text-5xl">{restaurantInfo?.logo || '🍽️'}</span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-              {mockRestaurant.name}
+              {restaurantInfo?.name || 'Menú'}
             </h1>
           </div>
           <p className="text-sm sm:text-base opacity-90 max-w-2xl">
-            {mockRestaurant.description}
+            {restaurantInfo?.description}
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs sm:text-sm">
             <span className="flex items-center gap-1">
-              📍 {mockRestaurant.address}
+              📍 {restaurantInfo?.address}
             </span>
             <span className="flex items-center gap-1">
-              📞 {mockRestaurant.phone}
+              📞 {restaurantInfo?.phone}
             </span>
             <span className="flex items-center gap-1">
-              🕐 {mockRestaurant.hours}
+              🕐 {restaurantInfo?.hours}
             </span>
           </div>
         </div>
@@ -61,7 +111,7 @@ function PublicMenu() {
 
       {/* Menu Selector */}
       <MenuSelector 
-        menus={mockMenus}
+        menus={menus}
         activeMenu={activeMenu}
         onMenuChange={setActiveMenu}
       />

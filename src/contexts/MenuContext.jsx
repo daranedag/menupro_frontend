@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { mockMenus } from '../data/mockMenuData';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { fetchMenusByRestaurant, createMenu as createMenuApi, updateMenu as updateMenuApi, publishMenu as publishMenuApi, createSection as createSectionApi, fetchSections, reorderSectionsApi } from '../api/menus';
+import { useAuth } from './AuthContext';
 
 const MenuContext = createContext(null);
 
@@ -14,52 +15,153 @@ export const useMenu = () => {
 export const MenuProvider = ({ children }) => {
   const [menus, setMenus] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const hasFetchedRef = useRef(false);
 
-  // Cargar menús desde localStorage o usar mock data
-  useEffect(() => {
-    const storedMenus = localStorage.getItem('menus');
-    if (storedMenus) {
-      try {
-        setMenus(JSON.parse(storedMenus));
-      } catch (error) {
-        console.error('Error parsing menus:', error);
-        setMenus(mockMenus);
-      }
-    } else {
-      setMenus(mockMenus);
-    }
-    setIsLoading(false);
-  }, []);
+  const normalizeDish = (dish) => ({
+    id: dish?.id || dish?._id || dish?.dishId || Date.now().toString(),
+    name: dish?.name || 'Sin nombre',
+    description: dish?.description || '',
+    longDescription: dish?.longDescription || dish?.long_description,
+    price: dish?.price ?? 0,
+    discount: dish?.discount ?? 0,
+    image: dish?.image,
+    tags: dish?.tags || [],
+    calories: dish?.calories,
+    prepTime: dish?.prepTime || dish?.prep_time,
+    isVegetarian: dish?.isVegetarian,
+    isSpicy: dish?.isSpicy,
+    isActive: dish?.isActive ?? dish?.active ?? true,
+    isVisible: dish?.isVisible ?? dish?.visible ?? true,
+  });
 
-  // Guardar menús en localStorage cuando cambien
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('menus', JSON.stringify(menus));
+  const normalizeSection = (section) => ({
+    id: section?.id || section?._id || section?.sectionId || Date.now().toString(),
+    name: section?.name || 'Sin nombre',
+    description: section?.description || '',
+    icon: section?.icon,
+    orderIndex: section?.order_index ?? section?.orderIndex ?? 0,
+    isActive: section?.isActive ?? section?.active ?? true,
+    isVisible: section?.isVisible ?? section?.visible ?? true,
+    items: (section?.items || section?.dishes || []).map(normalizeDish),
+  });
+
+  const normalizeMenu = (menu) => ({
+    id: menu?.id || menu?._id || menu?.menuId || Date.now().toString(),
+    name: menu?.name || 'Menú sin nombre',
+    slug: menu?.slug,
+    restaurantId: menu?.restaurantId || menu?.restaurant_id,
+    description: menu?.description || '',
+    icon: menu?.icon || '🍽️',
+    isActive: menu?.isActive ?? menu?.active ?? true,
+    isVisible: menu?.isVisible ?? menu?.visible ?? true,
+    isPublished: menu?.isPublished ?? menu?.published ?? menu?.is_published ?? false,
+    showCallToAction: menu?.showCallToAction ?? menu?.ctaEnabled ?? true,
+    ctaTitle: menu?.ctaTitle || menu?.cta_title,
+    ctaDescription: menu?.ctaDescription || menu?.cta_description,
+    phoneNumber: menu?.phoneNumber || menu?.phone_number,
+    deliveryUrl: menu?.deliveryUrl || menu?.delivery_url,
+    sections: (menu?.sections || []).map(normalizeSection),
+  });
+
+  const fetchMenus = useCallback(async (force = false) => {
+    if (authLoading || !isAuthenticated || !user) {
+      return;
     }
-  }, [menus, isLoading]);
+
+    const restaurantId = user?.activeRestaurantId || user?.restaurantId || user?.restaurant?.id || user?.restaurant?._id;
+
+    if (!restaurantId) {
+      setMenus([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (hasFetchedRef.current && !force) {
+      return;
+    }
+    hasFetchedRef.current = true;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data } = await fetchMenusByRestaurant(restaurantId);
+      const payload = data?.data ?? data;
+      const backendMenus = Array.isArray(payload) ? payload : payload?.menus || [];
+      const normalized = backendMenus.map(normalizeMenu);
+
+      const menusWithSections = await Promise.all(normalized.map(async (menuItem) => {
+        try {
+          const { data: sectionsData } = await fetchSections(menuItem.id);
+          const sectionsPayload = sectionsData?.data ?? sectionsData;
+          const sectionsArray = Array.isArray(sectionsPayload) ? sectionsPayload : sectionsPayload?.sections || [];
+          const normalizedSections = sectionsArray.map(normalizeSection).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+          return { ...menuItem, sections: normalizedSections };
+        } catch (sectionErr) {
+          return menuItem; // keep menu without sections if fetch fails
+        }
+      }));
+
+      setMenus(menusWithSections);
+    } catch (err) {
+      console.error('Error fetching menus', err);
+      setMenus([]);
+      setError(err?.message || 'No se pudieron cargar las cartas');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authLoading, isAuthenticated, user?.activeRestaurantId, user?.restaurantId, user?.restaurant]);
+
+  useEffect(() => {
+    fetchMenus();
+  }, [fetchMenus]);
+
+  useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [user?.activeRestaurantId, user?.restaurantId, user?.restaurant]);
 
   // CRUD Menús/Cartas
-  const createMenu = (menuData) => {
-    const newMenu = {
+  const createMenu = async (menuData) => {
+    const payload = {
       ...menuData,
-      id: Date.now().toString(),
-      sections: [],
-      isActive: true,
-      isVisible: true,
-      createdAt: new Date().toISOString(),
+      restaurantId: user?.activeRestaurantId || user?.restaurantId,
+      restaurant_id: user?.activeRestaurantId || user?.restaurantId,
     };
-    setMenus([...menus, newMenu]);
-    return newMenu;
+
+    const { data } = await createMenuApi(payload);
+    const created = normalizeMenu(data?.menu || data);
+    setMenus([...menus, created]);
+    return created;
   };
 
-  const updateMenu = (menuId, updates) => {
+  const updateMenu = async (menuId, updates) => {
+    const payload = {
+      ...updates,
+      restaurant_id: updates?.restaurant_id || user?.activeRestaurantId || user?.restaurantId,
+    };
+
+    const { data } = await updateMenuApi(menuId, payload);
+    const updated = normalizeMenu(data?.menu || data);
     setMenus(menus.map(menu => 
-      menu.id === menuId ? { ...menu, ...updates } : menu
+      menu.id === menuId ? updated : menu
     ));
+    return updated;
   };
 
   const deleteMenu = (menuId) => {
     setMenus(menus.filter(menu => menu.id !== menuId));
+  };
+
+  const publishMenu = async (menuId, publishState = true) => {
+    const { data } = await publishMenuApi(menuId, { publish: publishState });
+    const updated = normalizeMenu(data?.menu || data);
+    setMenus(menus.map(menu => 
+      menu.id === menuId ? updated : menu
+    ));
+    return updated;
   };
 
   const toggleMenuStatus = (menuId) => {
@@ -75,25 +177,28 @@ export const MenuProvider = ({ children }) => {
   };
 
   // CRUD Secciones
-  const createSection = (menuId, sectionData) => {
-    const newSection = {
+  const createSection = async (menuId, sectionData) => {
+    const menu = menus.find((m) => m.id === menuId);
+    const orderIndex = menu?.sections?.length ?? 0;
+    const payload = {
       ...sectionData,
-      id: Date.now().toString(),
-      items: [],
-      isActive: true,
-      isVisible: true,
+      order_index: orderIndex,
     };
-    
-    setMenus(menus.map(menu => {
-      if (menu.id === menuId) {
+
+    const { data } = await createSectionApi(menuId, payload);
+    const created = normalizeSection(data?.section || data);
+
+    setMenus(menus.map(menuItem => {
+      if (menuItem.id === menuId) {
         return {
-          ...menu,
-          sections: [...(menu.sections || []), newSection]
+          ...menuItem,
+          sections: [...(menuItem.sections || []), created]
         };
       }
-      return menu;
+      return menuItem;
     }));
-    return newSection;
+
+    return created;
   };
 
   const updateSection = (menuId, sectionId, updates) => {
@@ -137,10 +242,29 @@ export const MenuProvider = ({ children }) => {
   };
 
   // Reordenar secciones
-  const reorderSections = (menuId, reorderedSections) => {
+  const reorderSections = async (menuId, reorderedSections) => {
+    const withOrder = reorderedSections.map((section, idx) => ({
+      ...section,
+      orderIndex: idx,
+      order_index: idx,
+    }));
+
     setMenus(menus.map(menu => 
-      menu.id === menuId ? { ...menu, sections: reorderedSections } : menu
+      menu.id === menuId ? { ...menu, sections: withOrder } : menu
     ));
+
+    try {
+      const { data } = await reorderSectionsApi(menuId, withOrder);
+      const payload = data?.data ?? data;
+      const sectionsArray = Array.isArray(payload) ? payload : payload?.sections || [];
+      const normalizedSections = sectionsArray.map(normalizeSection).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
+      setMenus(current => current.map(menu =>
+        menu.id === menuId ? { ...menu, sections: normalizedSections } : menu
+      ));
+    } catch (err) {
+      console.error('Error reordenando secciones', err);
+    }
   };
 
   // Reordenar platos
@@ -255,10 +379,13 @@ export const MenuProvider = ({ children }) => {
   const value = {
     menus,
     isLoading,
+    error,
+    refreshMenus: () => fetchMenus(true),
     // Menús
     createMenu,
     updateMenu,
     deleteMenu,
+    publishMenu,
     toggleMenuStatus,
     toggleMenuVisibility,
     // Secciones

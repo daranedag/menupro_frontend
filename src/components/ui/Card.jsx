@@ -1,6 +1,7 @@
+import { forwardRef } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-function Card({ 
+const Card = forwardRef(function Card({ 
   children, 
   title,
   subtitle,
@@ -8,7 +9,7 @@ function Card({
   hoverable = false,
   padding = 'md',
   className = ''
-}) {
+}, ref) {
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
   
@@ -23,7 +24,7 @@ function Card({
   };
   
   return (
-    <div className={`${baseStyles} ${hoverStyles} ${className}`}>
+    <div ref={ref} className={`${baseStyles} ${hoverStyles} ${className}`}>
       {(title || subtitle) && (
         <div className={`${paddings[padding]} border-b ${isDark ? 'border-gray-700' : ''}`}>
           {title && <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{title}</h3>}
@@ -42,6 +43,6 @@ function Card({
       )}
     </div>
   );
-}
+});
 
 export default Card;

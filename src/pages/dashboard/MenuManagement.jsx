@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useMenu } from '../../contexts/MenuContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Button, Badge, Card } from '../../components/ui';
+import { Button, Badge, Card, Spinner } from '../../components/ui';
 import { Plus, BookOpen, Edit, Pause, Play, Eye, EyeOff, Trash2, UtensilsCrossed, FolderOpen } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 
 function MenuManagement() {
-  const { menus, toggleMenuStatus, toggleMenuVisibility, deleteMenu } = useMenu();
+  const { menus, toggleMenuStatus, toggleMenuVisibility, deleteMenu, publishMenu, isLoading } = useMenu();
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
 
@@ -32,7 +32,13 @@ function MenuManagement() {
           </Link>
         </div>
 
-        {menus.length === 0 ? (
+        {isLoading ? (
+          <Card padding="lg">
+            <div className="py-16 flex items-center justify-center">
+              <Spinner label="Cargando cartas..." />
+            </div>
+          </Card>
+        ) : menus.length === 0 ? (
           <Card padding="lg">
             <div className="text-center py-12">
               <div className="flex justify-center mb-4">
@@ -104,6 +110,14 @@ function MenuManagement() {
                       title={menu.isActive ? 'Pausar' : 'Activar'}
                     >
                       {menu.isActive ? <Pause size={16} /> : <Play size={16} />}
+                    </Button>
+                    <Button
+                      variant={menu.isPublished ? 'primary' : 'outline'}
+                      size="sm"
+                      onClick={() => publishMenu(menu.id, !menu.isPublished)}
+                      title={menu.isPublished ? 'Despublicar' : 'Publicar'}
+                    >
+                      {menu.isPublished ? 'Publicado' : 'Publicar'}
                     </Button>
                     <Button
                       variant="ghost"

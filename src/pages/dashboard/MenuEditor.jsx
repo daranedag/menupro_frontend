@@ -13,6 +13,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -33,6 +34,7 @@ function SortableSection({ section, menuId, onDeleteSection, onToggleSection, on
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: section.id });
 
   const style = {
@@ -41,7 +43,12 @@ function SortableSection({ section, menuId, onDeleteSection, onToggleSection, on
   };
 
   return (
-    <Card ref={setNodeRef} style={style} padding="none">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      padding="none"
+      className={`${isDragging ? 'ring-2 ring-blue-400 opacity-90' : ''}`}
+    >
       {/* Section Header */}
       <div className={`p-6 border-b ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'}`}>
         <div className="flex items-center justify-between">
@@ -264,6 +271,7 @@ function MenuEditor() {
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
   const [showPreview, setShowPreview] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState(null);
 
   const menu = menus.find(m => m.id === menuId);
 
@@ -292,15 +300,34 @@ function MenuEditor() {
     );
   }
 
+  const handleDragStart = (event) => {
+    setActiveSectionId(event.active.id);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
+
+    if (!over) {
+      setActiveSectionId(null);
+      return;
+    }
 
     if (active.id !== over.id) {
       const oldIndex = menu.sections.findIndex((s) => s.id === active.id);
       const newIndex = menu.sections.findIndex((s) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) {
+        setActiveSectionId(null);
+        return;
+      }
       const reordered = arrayMove(menu.sections, oldIndex, newIndex);
       reorderSections(menuId, reordered);
     }
+
+    setActiveSectionId(null);
+  };
+
+  const handleDragCancel = () => {
+    setActiveSectionId(null);
   };
 
   const handleDeleteSection = (sectionId, sectionName) => {
@@ -362,7 +389,13 @@ function MenuEditor() {
         {/* Sections List with Drag & Drop */}
         <div className="space-y-4">
           {menu.sections && menu.sections.length > 0 ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
               <SortableContext items={menu.sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 {menu.sections.map((section) => (
                   <SortableSection
@@ -375,6 +408,19 @@ function MenuEditor() {
                   />
                 ))}
               </SortableContext>
+              <DragOverlay>
+                {activeSectionId ? (
+                  <Card padding="none" className="ring-2 ring-blue-400">
+                    <div className="p-4 flex items-center gap-3">
+                      <span className="text-2xl">{menu.sections.find(s => s.id === activeSectionId)?.icon}</span>
+                      <div>
+                        <div className="text-lg font-semibold">{menu.sections.find(s => s.id === activeSectionId)?.name}</div>
+                        <div className="text-sm text-gray-500">Moviendo sección</div>
+                      </div>
+                    </div>
+                  </Card>
+                ) : null}
+              </DragOverlay>
             </DndContext>
           ) : (
             <Card>

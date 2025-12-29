@@ -15,8 +15,8 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
           <Routes>
-            {/* Ruta pública - Carta del restaurante */}
-            <Route path="/menu/:restaurantId" element={<PublicMenu />} />
+            {/* Ruta pública - Carta del restaurante (slug) */}
+            <Route path="/menu/:restaurantSlug/:menuSlug" element={<PublicMenu />} />
             
             {/* Ruta de autenticación */}
             <Route path="/auth" element={<Auth />} />

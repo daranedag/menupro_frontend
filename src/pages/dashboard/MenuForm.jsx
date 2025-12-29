@@ -40,15 +40,19 @@ function MenuForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (isEditing) {
-      updateMenu(menuId, formData);
+      await updateMenu(menuId, formData);
     } else {
-      createMenu(formData);
+      const created = await createMenu(formData);
+      if (created?.id) {
+        navigate(`/dashboard/menus/${created.id}`);
+        return;
+      }
     }
-    
+
     navigate('/dashboard/menus');
   };
 
