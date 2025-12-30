@@ -60,7 +60,7 @@ function DishForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const dishData = {
@@ -74,7 +74,7 @@ function DishForm() {
     if (isEditing) {
       updateDish(menuId, sectionId, dishId, dishData);
     } else {
-      createDish(menuId, sectionId, dishData);
+      await createDish(menuId, sectionId, dishData);
     }
     
     navigate(`/dashboard/menus/${menuId}`);
@@ -138,8 +138,8 @@ function DishForm() {
             />
 
             <div>
-              <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-200' : 'text-gray-700'
+              <label className={`block text-sm font-semibold tracking-tight mb-2 ${
+                isDark ? 'text-gray-100' : 'text-slate-800'
               }`}>
                 Descripción Larga (Opcional)
               </label>
@@ -154,7 +154,7 @@ function DishForm() {
                 }`}
               />
               <p className={`text-sm mt-1 ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
+                isDark ? 'text-gray-300' : 'text-slate-600'
               }`}>Se muestra solo en desktop</p>
             </div>
 
@@ -206,8 +206,8 @@ function DishForm() {
               <div className={`border rounded-lg p-4 ${
                 isDark ? 'border-gray-600' : 'border-gray-300'
               }`}>
-                <p className={`text-sm font-medium mb-2 ${
-                  isDark ? 'text-gray-200' : 'text-gray-700'
+                <p className={`text-sm font-semibold tracking-tight mb-2 ${
+                  isDark ? 'text-gray-100' : 'text-slate-800'
                 }`}>Vista Previa:</p>
                 <img 
                   src={formData.image} 
@@ -219,8 +219,8 @@ function DishForm() {
             )}
 
             <div>
-              <label className={`block text-sm font-medium mb-3 ${
-                isDark ? 'text-gray-200' : 'text-gray-700'
+              <label className={`block text-sm font-semibold tracking-tight mb-3 ${
+                isDark ? 'text-gray-100' : 'text-slate-800'
               }`}>
                 Características
               </label>
@@ -234,7 +234,7 @@ function DishForm() {
                     className="w-4 h-4 text-blue-600 rounded"
                   />
                   <span className={`text-sm ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
+                    isDark ? 'text-gray-100' : 'text-slate-800'
                   }`}>🥬 Vegetariano</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -246,15 +246,15 @@ function DishForm() {
                     className="w-4 h-4 text-blue-600 rounded"
                   />
                   <span className={`text-sm ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
+                    isDark ? 'text-gray-100' : 'text-slate-800'
                   }`}>🌶️ Picante</span>
                 </label>
               </div>
             </div>
 
             <div>
-              <label className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-200' : 'text-gray-700'
+              <label className={`block text-sm font-semibold tracking-tight mb-2 ${
+                isDark ? 'text-gray-100' : 'text-slate-800'
               }`}>
                 Tags / Etiquetas
               </label>

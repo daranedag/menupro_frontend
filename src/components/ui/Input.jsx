@@ -16,7 +16,9 @@ function Input({
   className = ''
 }) {
   const { theme } = useTheme();
-  const isDark = theme.mode === 'dark';
+  const systemPrefersDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  // Respeta la preferencia explícita del tema; solo usa la clase global si no hay modo definido.
+  const isDark = theme.mode === 'dark' || (!theme.mode && systemPrefersDark);
   
   const baseStyles = `px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:cursor-not-allowed ${
     isDark 
@@ -31,7 +33,7 @@ function Input({
   return (
     <div className={`${fullWidth ? 'w-full' : ''} ${className}`}>
       {label && (
-        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+        <label className={`block text-sm font-semibold mb-2 tracking-tight ${isDark ? 'text-gray-100' : 'text-slate-800'}`}>
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>

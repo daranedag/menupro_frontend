@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { fetchMenusByRestaurant, createMenu as createMenuApi, updateMenu as updateMenuApi, publishMenu as publishMenuApi, createSection as createSectionApi, fetchSections, reorderSectionsApi } from '../api/menus';
+import { fetchMenusByRestaurant, createMenu as createMenuApi, updateMenu as updateMenuApi, publishMenu as publishMenuApi, createSection as createSectionApi, createDish as createDishApi, fetchSectionItems, reorderSectionItems, fetchSections, reorderSectionsApi } from '../api/menus';
 import { useAuth } from './AuthContext';
 
 const MenuContext = createContext(null);
@@ -30,6 +30,7 @@ export const MenuProvider = ({ children }) => {
     tags: dish?.tags || [],
     calories: dish?.calories,
     prepTime: dish?.prepTime || dish?.prep_time,
+    orderIndex: dish?.orderIndex ?? dish?.order_index,
     isVegetarian: dish?.isVegetarian,
     isSpicy: dish?.isSpicy,
     isActive: dish?.isActive ?? dish?.active ?? true,
@@ -46,6 +47,14 @@ export const MenuProvider = ({ children }) => {
     isVisible: section?.isVisible ?? section?.visible ?? true,
     items: (section?.items || section?.dishes || []).map(normalizeDish),
   });
+
+  const normalizeItemsResponse = (data) => {
+    const payload = data?.data ?? data;
+    const itemsArray = Array.isArray(payload) ? payload : payload?.items || [];
+    return itemsArray
+      .map(normalizeDish)
+      .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+  };
 
   const normalizeMenu = (menu) => ({
     id: menu?.id || menu?._id || menu?.menuId || Date.now().toString(),
@@ -99,7 +108,18 @@ export const MenuProvider = ({ children }) => {
           const sectionsPayload = sectionsData?.data ?? sectionsData;
           const sectionsArray = Array.isArray(sectionsPayload) ? sectionsPayload : sectionsPayload?.sections || [];
           const normalizedSections = sectionsArray.map(normalizeSection).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-          return { ...menuItem, sections: normalizedSections };
+
+          const sectionsWithItems = await Promise.all(normalizedSections.map(async (section) => {
+            try {
+              const { data: itemsData } = await fetchSectionItems(section.id);
+              const normalizedItems = normalizeItemsResponse(itemsData);
+              return { ...section, items: normalizedItems };
+            } catch (itemsErr) {
+              return section;
+            }
+          }));
+
+          return { ...menuItem, sections: sectionsWithItems };
         } catch (sectionErr) {
           return menuItem; // keep menu without sections if fetch fails
         }
@@ -268,30 +288,69 @@ export const MenuProvider = ({ children }) => {
   };
 
   // Reordenar platos
-  const reorderDishes = (menuId, sectionId, reorderedDishes) => {
+  const reorderDishes = async (menuId, sectionId, reorderedDishes) => {
+    const withOrder = reorderedDishes.map((item, idx) => ({
+      ...item,
+      orderIndex: idx,
+      order_index: idx,
+    }));
+
     setMenus(menus.map(menu => {
       if (menu.id === menuId) {
         return {
           ...menu,
           sections: menu.sections.map(section => 
-            section.id === sectionId ? { ...section, items: reorderedDishes } : section
+            section.id === sectionId ? { ...section, items: withOrder } : section
           )
         };
       }
       return menu;
     }));
+
+    try {
+      const { data } = await reorderSectionItems(sectionId, withOrder);
+      const normalizedItems = normalizeItemsResponse(data);
+
+      setMenus(current => current.map(menu => {
+        if (menu.id === menuId) {
+          return {
+            ...menu,
+            sections: menu.sections.map(section =>
+              section.id === sectionId ? { ...section, items: normalizedItems } : section
+            )
+          };
+        }
+        return menu;
+      }));
+    } catch (err) {
+      console.error('Error reordenando platos', err);
+    }
   };
 
   // CRUD Platos
-  const createDish = (menuId, sectionId, dishData) => {
-    const newDish = {
-      ...dishData,
-      id: Date.now().toString(),
-      isActive: true,
-      isVisible: true,
-      createdAt: new Date().toISOString(),
+  const createDish = async (menuId, sectionId, dishData) => {
+    const section = menus.find((m) => m.id === menuId)?.sections?.find((s) => s.id === sectionId);
+    const nextOrderIndex = section?.items?.length ?? 0;
+
+    const payload = {
+      name: dishData?.name,
+      description: dishData?.description,
+      longDescription: dishData?.longDescription,
+      price: dishData?.price ?? 0,
+      discount: dishData?.discount ?? 0,
+      image: dishData?.image,
+      tags: dishData?.tags || [],
+      calories: dishData?.calories ?? null,
+      prepTime: dishData?.prepTime ?? null,
+      isVegetarian: dishData?.isVegetarian ?? false,
+      isSpicy: dishData?.isSpicy ?? false,
+      order_index: nextOrderIndex,
     };
-    
+
+    const { data } = await createDishApi(sectionId, payload);
+    const created = normalizeDish(data?.item || data?.dish || data || payload);
+
+    // Optimistic add while fetching full ordered list
     setMenus(menus.map(menu => {
       if (menu.id === menuId) {
         return {
@@ -300,7 +359,7 @@ export const MenuProvider = ({ children }) => {
             if (section.id === sectionId) {
               return {
                 ...section,
-                items: [...(section.items || []), newDish]
+                items: [...(section.items || []), { ...created, orderIndex: created.orderIndex ?? nextOrderIndex }]
               };
             }
             return section;
@@ -309,7 +368,27 @@ export const MenuProvider = ({ children }) => {
       }
       return menu;
     }));
-    return newDish;
+
+    try {
+      const { data: itemsResponse } = await fetchSectionItems(sectionId);
+      const normalizedItems = normalizeItemsResponse(itemsResponse);
+
+      setMenus(current => current.map(menu => {
+        if (menu.id === menuId) {
+          return {
+            ...menu,
+            sections: menu.sections.map(section =>
+              section.id === sectionId ? { ...section, items: normalizedItems } : section
+            )
+          };
+        }
+        return menu;
+      }));
+    } catch (err) {
+      console.error('Error recargando platos de sección', err);
+    }
+
+    return created;
   };
 
   const updateDish = (menuId, sectionId, dishId, updates) => {

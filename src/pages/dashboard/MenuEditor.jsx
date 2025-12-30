@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useMenu } from '../../contexts/MenuContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Button, Badge, Card, Modal } from '../../components/ui';
+import { Button, Badge, Card, Modal, Spinner } from '../../components/ui';
 import { Plus, GripVertical, Edit, Pause, Play, Trash2, Power, PowerOff, Eye } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { MenuPreview, PDFGenerator, QRGenerator, MobilePreview } from '../../components/dashboard';
@@ -133,14 +133,14 @@ function DishList({ dishes, menuId, sectionId, onDeleteDish }) {
     })
   );
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
 
     if (active.id !== over.id) {
       const oldIndex = dishes.findIndex((d) => d.id === active.id);
       const newIndex = dishes.findIndex((d) => d.id === over.id);
       const reordered = arrayMove(dishes, oldIndex, newIndex);
-      reorderDishes(menuId, sectionId, reordered);
+      await reorderDishes(menuId, sectionId, reordered);
     }
   };
 
@@ -267,7 +267,7 @@ function SortableDish({ dish, menuId, sectionId, onDelete }) {
 function MenuEditor() {
   const { menuId } = useParams();
   const navigate = useNavigate();
-  const { menus, deleteSection, deleteDish, toggleSectionStatus, reorderSections } = useMenu();
+  const { menus, isLoading, deleteSection, deleteDish, toggleSectionStatus, reorderSections } = useMenu();
   const { theme } = useTheme();
   const isDark = theme.mode === 'dark';
   const [showPreview, setShowPreview] = useState(false);
@@ -281,6 +281,21 @@ function MenuEditor() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <Card>
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Spinner size="lg" label="Cargando carta..." />
+            <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              Estamos preparando tu menú
+            </p>
+          </div>
+        </Card>
+      </DashboardLayout>
+    );
+  }
 
   if (!menu) {
     return (
@@ -304,7 +319,7 @@ function MenuEditor() {
     setActiveSectionId(event.active.id);
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
 
     if (!over) {
