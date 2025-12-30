@@ -15,7 +15,11 @@ function PrivateRoute({ children }) {
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
 }
 
 export default PrivateRoute;

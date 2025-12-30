@@ -16,6 +16,12 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const normalizeRole = (role) =>
+    (role || 'restaurant_owner')
+      .toString()
+      .trim()
+      .toLowerCase();
+
   // Cargar usuario desde localStorage al iniciar
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -29,7 +35,8 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        setUser(parsed);
+        const restoredRole = normalizeRole(parsed?.role);
+        setUser({ ...parsed, role: restoredRole });
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('user');
@@ -59,10 +66,15 @@ export const AuthProvider = ({ children }) => {
       const restaurants = data?.restaurants || data?.data?.restaurants || backendUser?.restaurants || (backendUser?.restaurant ? [backendUser.restaurant] : []);
       const activeRestaurant = restaurants?.[0];
 
+      const normalizedRole = normalizeRole(
+        backendUser?.app_role || backendUser?.role || backendUser?.userRole || backendUser?.roleName
+      );
+
       const userData = {
         id: backendUser?.id || backendUser?.userId || backendUser?._id,
         email: backendUser?.email || email,
         name: backendUser?.name || backendUser?.fullName || backendUser?.username || email?.split('@')?.[0],
+        role: normalizedRole,
         restaurants,
         activeRestaurantId: backendUser?.restaurantId || activeRestaurant?.id || activeRestaurant?._id,
         activeRestaurantName: backendUser?.restaurantName || activeRestaurant?.name,

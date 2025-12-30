@@ -36,8 +36,9 @@ function Auth() {
     setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      const loggedUser = await login(formData.email, formData.password);
+      const destination = loggedUser?.role === 'platform_admin' ? '/admin' : '/dashboard';
+      navigate(destination);
     } catch (err) {
       setError(err.message || 'Error al procesar la solicitud');
     } finally {
