@@ -13,12 +13,13 @@ function Input({
   required = false,
   fullWidth = true,
   icon,
-  className = ''
+  className = '',
+  forceLight = false,
 }) {
   const { theme } = useTheme();
   const systemPrefersDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   // Respeta la preferencia explícita del tema; solo usa la clase global si no hay modo definido.
-  const isDark = theme.mode === 'dark' || (!theme.mode && systemPrefersDark);
+  const isDark = !forceLight && (theme.mode === 'dark' || (!theme.mode && systemPrefersDark));
   
   const baseStyles = `px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:cursor-not-allowed ${
     isDark 

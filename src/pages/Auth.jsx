@@ -6,14 +6,13 @@ import { Input, Button } from '../components/ui';
 function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    restaurantName: '',
     email: '',
     password: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -28,15 +27,15 @@ function Auth() {
     e.preventDefault();
     setError('');
 
-    if (!isLogin) {
-      setError('El registro está deshabilitado por ahora. Solicita acceso al administrador.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const loggedUser = await login(formData.email, formData.password);
+      const loggedUser = isLogin
+        ? await login(formData.email, formData.password)
+        : await register({
+            email: formData.email,
+            password: formData.password,
+          });
       const destination = loggedUser?.role === 'platform_admin' ? '/admin' : '/dashboard';
       navigate(destination);
     } catch (err) {
@@ -110,12 +109,6 @@ function Auth() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                  El registro desde la app aún no está disponible. Por favor inicia sesión con tu cuenta existente.
-                </div>
-              )}
-
               <Input
                 label="Email"
                 name="email"
@@ -125,6 +118,7 @@ function Auth() {
                 onChange={handleChange}
                 required
                 icon="📧"
+                forceLight
               />
 
               <Input
@@ -137,6 +131,7 @@ function Auth() {
                 required
                 icon="🔒"
                 helperText={!isLogin ? "Mínimo 6 caracteres" : ""}
+                forceLight
               />
 
               <Button
@@ -146,7 +141,7 @@ function Auth() {
                 fullWidth
                 disabled={isLoading}
               >
-                {isLoading ? 'Procesando...' : (isLogin ? 'Entrar' : 'Registro no disponible')}
+                {isLoading ? 'Procesando...' : (isLogin ? 'Entrar' : 'Crear cuenta')}
               </Button>
             </form>
 
